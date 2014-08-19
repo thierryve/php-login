@@ -46,6 +46,13 @@ define('FACEBOOK_LOGIN_PATH', 'login/loginWithFacebook');
 define('FACEBOOK_REGISTER_PATH', 'login/registerWithFacebook');
 
 /**
+ * Configuration for: Additional login providers: Sesame
+ */
+define('USE_SESAME', true);
+define('SESAME_PATH', 'public/tmp/');
+define('SESAME_LOGIN_URL', 'login/index');
+
+/**
  * Configuration for: Avatars/Gravatar support
  * Set to true if you want to use "Gravatar(s)", a service that automatically gets avatar pictures via using email
  * addresses of users by requesting images from the gravatar.com API. Set to false to use own locally saved avatars.

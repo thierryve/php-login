@@ -126,6 +126,12 @@ class LoginModel
                 setcookie('rememberme', $cookie_string, time() + COOKIE_RUNTIME, "/", COOKIE_DOMAIN);
             }
 
+            if (isset($_POST['sesamecode'])) {
+                $statement = $this->db->prepare("UPDATE sesame SET logged_in_user_id = :user_id WHERE random_code = :randomCode");
+                $statement->execute(array(':user_id' => $result->user_id, ':randomCode' => $_POST['sesamecode']));
+                $_SESSION["feedback_positive"][] = "You are logged on in the desktop browser!";
+            }
+
             // return true to make clear the login was successful
             return true;
 
@@ -278,6 +284,71 @@ class LoginModel
         }
         // default return
         return false;
+    }
+
+    /**
+     * Generates a sesame login code and stores it in the database
+     * @return int sesame random code
+     */
+    public function generateSesameLoginCode()
+    {
+        Session::init();
+        $randomCode = Session::get('sesamecode');
+        if (!is_null($randomCode)) {
+            $sql = "SELECT logged_in_user_id FROM sesame WHERE random_code = :random_code";
+            $query = $this->db->prepare($sql);
+            $query->execute(array(':random_code' => $randomCode));
+            $result = $query->fetch();
+
+            if ($result->logged_in_user_id !== null) {
+                // get user's data
+                $sth = $this->db->prepare("SELECT user_id,
+                                          user_name,
+                                          user_email,
+                                          user_password_hash,
+                                          user_active,
+                                          user_account_type,
+                                          user_failed_logins,
+                                          user_last_failed_login
+                                   FROM   users
+                                   WHERE  user_id = :userId");
+                $sth->execute(array(':userId' => $result->logged_in_user_id));
+                $count =  $sth->rowCount();
+                // if there's NOT one result
+                if ($count != 1) {
+                    // was FEEDBACK_USER_DOES_NOT_EXIST before, but has changed to FEEDBACK_LOGIN_FAILED
+                    // to prevent potential attackers showing if the user exists
+                    $_SESSION["feedback_negative"][] = FEEDBACK_LOGIN_FAILED;
+                    return false;
+                }
+
+                // fetch one row (we only have one result)
+                $result = $sth->fetch();
+
+                // login process, write the user data into session
+                Session::init();
+                Session::set('user_logged_in', true);
+                Session::set('user_id', $result->user_id);
+                Session::set('user_name', $result->user_name);
+                Session::set('user_email', $result->user_email);
+                Session::set('user_account_type', $result->user_account_type);
+                Session::set('user_provider_type', 'DEFAULT');
+                // put native avatar path into session
+                Session::set('user_avatar_file', $this->getUserAvatarFilePath());
+                // put Gravatar URL into session
+                $this->setGravatarImageUrl($result->user_email, AVATAR_SIZE);
+
+                return true;
+            }
+            return $randomCode;
+
+        } else {
+            $randomCode = rand(100000000, 999999999);
+            Session::set('sesamecode', $randomCode);
+            $query = $this->db->prepare("INSERT INTO sesame (random_code) VALUES (:random_code)");
+            $query->execute(array(':random_code' => $randomCode));
+            return $randomCode;
+        }
     }
 
     /**

@@ -28,6 +28,21 @@ class Login extends Controller
             $this->view->facebook_login_url = $login_model->getFacebookLoginUrl();
         }
 
+        // if we use SESAME: create QR code with loginkey
+
+        if (USE_SESAME && !isset($_GET['code'])) {
+            $code = $login_model->generateSesameLoginCode();
+            if(true === $code) {
+                // if TRUE, then move user to dashboard/index (btw this is a browser-redirection, not a rendered view!)
+                header('location: ' . URL . 'dashboard/index');
+                exit();
+            } else {
+                $this->view->sesame_qrcode_url = SESAME_PATH . "qrcode.png";
+                $this->view->sesame_url = URL . SESAME_LOGIN_URL . '?code=' . $code;
+                \PHPQRCode\QRcode::png(URL . SESAME_LOGIN_URL . '?code=' . $code, $this->view->sesame_qrcode_url, \PHPQRCode\Constants::QR_ECLEVEL_H, 4);
+            }
+        }
+
         // show the view
         $this->view->render('login/index');
     }
