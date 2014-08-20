@@ -129,7 +129,7 @@ class LoginModel
             if (isset($_POST['sesamecode'])) {
                 $statement = $this->db->prepare("UPDATE sesame SET logged_in_user_id = :user_id WHERE random_code = :randomCode");
                 $statement->execute(array(':user_id' => $result->user_id, ':randomCode' => $_POST['sesamecode']));
-                $_SESSION["feedback_positive"][] = "You are logged on in the desktop browser!";
+                $_SESSION["feedback_positive"][] = FEEDBACK_SESAME_SUCCESS;
             }
 
             // return true to make clear the login was successful
@@ -287,68 +287,99 @@ class LoginModel
     }
 
     /**
-     * Generates a sesame login code and stores it in the database
-     * @return int sesame random code
+     * Check if a user used the assigned sesamecode to login on a device
      */
-    public function generateSesameLoginCode()
+    public function checkLoggedInWithSesameCode()
     {
         Session::init();
         $randomCode = Session::get('sesamecode');
-        if (!is_null($randomCode)) {
-            $sql = "SELECT logged_in_user_id FROM sesame WHERE random_code = :random_code";
-            $query = $this->db->prepare($sql);
-            $query->execute(array(':random_code' => $randomCode));
-            $result = $query->fetch();
+        // if sesamecode not exists directly return false
+        if (is_null($randomCode)) {
+            return false;
+        }
 
-            if ($result->logged_in_user_id !== null) {
-                // get user's data
-                $sth = $this->db->prepare("SELECT user_id,
-                                          user_name,
-                                          user_email,
-                                          user_password_hash,
-                                          user_active,
-                                          user_account_type,
-                                          user_failed_logins,
-                                          user_last_failed_login
-                                   FROM   users
-                                   WHERE  user_id = :userId");
-                $sth->execute(array(':userId' => $result->logged_in_user_id));
-                $count =  $sth->rowCount();
-                // if there's NOT one result
-                if ($count != 1) {
-                    // was FEEDBACK_USER_DOES_NOT_EXIST before, but has changed to FEEDBACK_LOGIN_FAILED
-                    // to prevent potential attackers showing if the user exists
-                    $_SESSION["feedback_negative"][] = FEEDBACK_LOGIN_FAILED;
-                    return false;
-                }
+        //check database for randomcode
+        $sql = "SELECT logged_in_user_id FROM sesame WHERE random_code = :random_code";
+        $query = $this->db->prepare($sql);
+        $query->execute(array(':random_code' => $randomCode));
 
-                // fetch one row (we only have one result)
-                $result = $sth->fetch();
+        // if there's NOT one result
+        if ($query->rowCount() !== 1) {
+            return false;
+        }
 
-                // login process, write the user data into session
-                Session::init();
-                Session::set('user_logged_in', true);
-                Session::set('user_id', $result->user_id);
-                Session::set('user_name', $result->user_name);
-                Session::set('user_email', $result->user_email);
-                Session::set('user_account_type', $result->user_account_type);
-                Session::set('user_provider_type', 'DEFAULT');
-                // put native avatar path into session
-                Session::set('user_avatar_file', $this->getUserAvatarFilePath());
-                // put Gravatar URL into session
-                $this->setGravatarImageUrl($result->user_email, AVATAR_SIZE);
+        // fetch one row (we only have one result)
+        $sesameResult = $query->fetch();
 
-                return true;
+        // When the randomcode has a logged_in_user_id, this user_id will be used to login
+        if ($sesameResult->logged_in_user_id !== null) {
+            // get user's data
+            $sql = "SELECT user_id,
+                           user_name,
+                           user_email,
+                           user_password_hash,
+                           user_active,
+                           user_account_type,
+                           user_failed_logins,
+                           user_last_failed_login
+                    FROM   users
+                    WHERE  user_id = :userId";
+            $sth = $this->db->prepare($sql);
+            $sth->execute(array(':userId' => $sesameResult->logged_in_user_id));
+            $count =  $sth->rowCount();
+            // if there's NOT one result
+            if ($count != 1) {
+                // was FEEDBACK_USER_DOES_NOT_EXIST before, but has changed to FEEDBACK_LOGIN_FAILED
+                // to prevent potential attackers showing if the user exists
+                $_SESSION["feedback_negative"][] = FEEDBACK_LOGIN_FAILED;
+                return false;
             }
-            return $randomCode;
 
-        } else {
+            // fetch one row (we only have one result)
+            $result = $sth->fetch();
+
+            // login process, write the user data into session
+            Session::init();
+            Session::set('user_logged_in', true);
+            Session::set('user_id', $result->user_id);
+            Session::set('user_name', $result->user_name);
+            Session::set('user_email', $result->user_email);
+            Session::set('user_account_type', $result->user_account_type);
+            Session::set('user_provider_type', 'DEFAULT');
+            // put native avatar path into session
+            Session::set('user_avatar_file', $this->getUserAvatarFilePath());
+            // put Gravatar URL into session
+            $this->setGravatarImageUrl($result->user_email, AVATAR_SIZE);
+
+            // Cleanup: remove used sesame record.
+            // This way it can't be used twice.
+            $sql = "DELETE FROM sesame WHERE sesame_id = :sesame_id ";
+            $query = $this->db->prepare($sql);
+            $query->execute(array(':sesame_id' => $sesameResult->sesame_id));
+
+            return true;
+        }
+        //default return
+        return false;
+    }
+
+
+    /**
+     * Returns sesamecode
+     * if none exits generates a sesame login code and stores it in the database
+     * @return int sesame random code
+     */
+    public function getSesameCode()
+    {
+        Session::init();
+        $randomCode = Session::get('sesamecode');
+        if (is_null($randomCode)) {
             $randomCode = rand(100000000, 999999999);
             Session::set('sesamecode', $randomCode);
             $query = $this->db->prepare("INSERT INTO sesame (random_code) VALUES (:random_code)");
             $query->execute(array(':random_code' => $randomCode));
-            return $randomCode;
         }
+        return $randomCode;
     }
 
     /**

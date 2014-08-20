@@ -10,7 +10,9 @@
                 <input type="text" name="user_name" required />
                 <label>Password</label>
                 <input type="password" name="user_password" required />
-                <?php if (isset($_GET['code'])) { ?>
+                <?php
+                // include hidden input when sesame code exists
+                if (isset($_GET['code'])) { ?>
                     <input type="hidden" name="sesamecode" value="<?php echo $_GET['code'] ?>" />
                 <?php } ?>
                 <input type="checkbox" name="user_rememberme" class="remember-me-checkbox" />
@@ -22,14 +24,18 @@
         <a href="<?php echo URL; ?>login/requestpasswordreset">Forgot my Password</a>
     </div>
 
-    <?php if (FACEBOOK_LOGIN == true) { ?>
+    <?php
+    // for now sesame is not working with facebook login
+    if (FACEBOOK_LOGIN == true && !isset($_GET['code'])) { ?>
     <div class="login-facebook-box">
         <h1>or</h1>
         <a href="<?php echo $this->facebook_login_url; ?>" class="facebook-login-button">Log in with Facebook</a>
     </div>
     <?php } ?>
 
-    <?php if (USE_SESAME && !isset($_GET['code'])) { ?>
+    <?php
+    // when use_sesame is true and get param doesn't have sesamecode then display qrcode
+    if (USE_SESAME && !isset($_GET['code'])) { ?>
     <meta http-equiv="refresh" content="5">
     <div class="login-facebook-box">
         <h1>or</h1>

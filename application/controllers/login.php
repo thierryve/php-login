@@ -28,18 +28,26 @@ class Login extends Controller
             $this->view->facebook_login_url = $login_model->getFacebookLoginUrl();
         }
 
-        // if we use SESAME: create QR code with loginkey
-
+        // if we use SESAME: check if sesame code is used or create one. we don't want to do this when get param code exists
         if (USE_SESAME && !isset($_GET['code'])) {
-            $code = $login_model->generateSesameLoginCode();
-            if(true === $code) {
+            if( $login_model->checkLoggedInWithSesameCode() ) {
                 // if TRUE, then move user to dashboard/index (btw this is a browser-redirection, not a rendered view!)
                 header('location: ' . URL . 'dashboard/index');
                 exit();
             } else {
-                $this->view->sesame_qrcode_url = SESAME_PATH . "qrcode.png";
-                $this->view->sesame_url = URL . SESAME_LOGIN_URL . '?code=' . $code;
-                \PHPQRCode\QRcode::png(URL . SESAME_LOGIN_URL . '?code=' . $code, $this->view->sesame_qrcode_url, \PHPQRCode\Constants::QR_ECLEVEL_H, 4);
+                $sesameCode = $login_model->getSesameCode();
+                // qr code filepath, code is hashed so it is not in pagesource as plaintext
+                $this->view->sesame_qrcode_url = SESAME_PATH . "qrcode_". md5($sesameCode) .".png";
+
+                //URL just for testing purpose
+                $this->view->sesame_url = URL . SESAME_LOGIN_URL . '?code=' . $sesameCode;
+
+                // create CR code image and store it on disk
+                \PHPQRCode\QRcode::png(
+                    URL . SESAME_LOGIN_URL . '?code=' . $sesameCode, $this->view->sesame_qrcode_url,
+                    \PHPQRCode\Constants::QR_ECLEVEL_H,
+                    4
+                );
             }
         }
 
