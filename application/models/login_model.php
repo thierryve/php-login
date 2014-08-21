@@ -132,6 +132,9 @@ class LoginModel
                 $_SESSION["feedback_positive"][] = FEEDBACK_SESAME_SUCCESS;
             }
 
+            //clean sesame code
+            $this->cleanSesameCode();
+
             // return true to make clear the login was successful
             return true;
 
@@ -351,12 +354,8 @@ class LoginModel
             // put Gravatar URL into session
             $this->setGravatarImageUrl($result->user_email, AVATAR_SIZE);
 
-            // Cleanup: remove used sesame record.
-            // This way it can't be used twice.
-            $sql = "DELETE FROM sesame WHERE sesame_id = :sesame_id ";
-            $query = $this->db->prepare($sql);
-            $query->execute(array(':sesame_id' => $sesameResult->sesame_id));
-
+            // cleanup
+            $this->cleanSesameCode($randomCode);
             return true;
         }
         //default return
@@ -380,6 +379,38 @@ class LoginModel
             $query->execute(array(':random_code' => $randomCode));
         }
         return $randomCode;
+    }
+
+
+    /**
+     * Clean sesame code from database and Session
+     *
+     * @param null $sesameCode
+     * @return bool
+     */
+    public function cleanSesameCode($sesameCode = null)
+    {
+        // no sesamecode is given and check if session exits
+        if(  is_null($sesameCode) && !is_null(Session::get('sesamecode')) ) {
+            $sesameCode = Session::get('sesamecode');
+        }
+
+        // no sesamecode then return false
+        if( is_null($sesameCode) ) {
+            return false;
+        }
+
+        // remove sesame record.
+        // This way it can't be used twice.
+        $sql = "DELETE FROM sesame WHERE random_code = :random_code";
+        $params = array(':random_code' => $sesameCode);
+        $query = $this->db->prepare($sql);
+        $query->execute($params);
+
+        //Unset code session, probably it is better to extend the Session class with an unset and isset method
+        Session::set('sesamecode', null);
+
+        return true;
     }
 
     /**
