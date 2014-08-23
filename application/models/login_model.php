@@ -126,10 +126,9 @@ class LoginModel
                 setcookie('rememberme', $cookie_string, time() + COOKIE_RUNTIME, "/", COOKIE_DOMAIN);
             }
 
+            //if sesamecode exist add the user id in the db record
             if (isset($_POST['sesamecode'])) {
-                $statement = $this->db->prepare("UPDATE sesame SET logged_in_user_id = :user_id WHERE random_code = :randomCode");
-                $statement->execute(array(':user_id' => $result->user_id, ':randomCode' => $_POST['sesamecode']));
-                $_SESSION["feedback_positive"][] = FEEDBACK_SESAME_SUCCESS;
+                $this->setUserIdForSesameCode($result->user_id, $_POST['sesamecode']);
             }
 
             //clean sesame code
@@ -277,6 +276,11 @@ class LoginModel
                 $sth = $this->db->prepare($sql);
                 $sth->execute(array(':user_id' => $result->user_id, ':user_last_login_timestamp' => $user_last_login_timestamp));
 
+                //if sesamecode exist add the user id in the db record
+                if (isset($_GET['sesamecode'])) {
+                    $this->setUserIdForSesameCode($result->user_id, $_GET['sesamecode']);
+                }
+
                 return true;
 
             } catch (FacebookApiException $e) {
@@ -391,6 +395,17 @@ class LoginModel
         return $randomCode;
     }
 
+    /**
+     * Add user_id to given sesameCode record in db
+     * @param int $userId
+     * @param string $sesameCode
+     */
+    private function setUserIdForSesameCode($userId, $sesameCode)
+    {
+        $statement = $this->db->prepare("UPDATE sesame SET logged_in_user_id = :user_id WHERE random_code = :randomCode");
+        $statement->execute(array(':user_id' => $userId, ':randomCode' => $sesameCode));
+        $_SESSION["feedback_positive"][] = FEEDBACK_SESAME_SUCCESS;
+    }
 
     /**
      * Clean sesame code from database and Session
@@ -1282,7 +1297,12 @@ class LoginModel
 
         // get the "login"-URL: This is the URL the user will be redirected to after being sent to the Facebook Auth
         // server by clicking the "login via facebook"-button. Don't touch this until you know exactly what you do.
-        $facebook_login_url = $facebook->getLoginUrl(array('redirect_uri' => URL . FACEBOOK_LOGIN_PATH));
+        $callbackUrl = URL . FACEBOOK_LOGIN_PATH;
+        // if sesamecode exist, concatenate it with the callbackUrl
+        if (isset($_GET['code'])) {
+            $callbackUrl .= '?sesamecode='.$_GET['code'];
+        }
+        $facebook_login_url = $facebook->getLoginUrl(array('redirect_uri' => $callbackUrl));
 
         return $facebook_login_url;
     }

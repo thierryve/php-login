@@ -26,7 +26,7 @@
 
     <?php
     // for now sesame is not working with facebook login
-    if (FACEBOOK_LOGIN == true && !isset($_GET['code'])) { ?>
+    if (FACEBOOK_LOGIN == true) { ?>
     <div class="login-facebook-box">
         <h1>or</h1>
         <a href="<?php echo $this->facebook_login_url; ?>" class="facebook-login-button">Log in with Facebook</a>
