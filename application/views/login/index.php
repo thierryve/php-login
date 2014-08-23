@@ -40,8 +40,12 @@
     <div class="login-facebook-box">
         <h1>or</h1>
         <h2>Login with sesame</h2>
-        <img src="<?php echo URL . $this->sesame_qrcode_url ?>"><br/>
-        <a href="<?php echo $this->sesame_url ?>" target="_blank"><?php echo $this->sesame_url ?></a>
+        <?php if (isset($this->sesame_qrcode_url)) { ?>
+            <img src="<?php echo URL . $this->sesame_qrcode_url ?>"><br/>
+            <a href="<?php echo $this->sesame_url ?>" target="_blank"><?php echo $this->sesame_url ?></a>
+        <?php } else { ?>
+            <p>The sesame code couldn't be generated, please try again in a few seconds</p>
+        <?php } ?>
     </div>
     <?php } ?>
 

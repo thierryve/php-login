@@ -36,18 +36,21 @@ class Login extends Controller
                 exit();
             } else {
                 $sesameCode = $login_model->getSesameCode();
-                // qr code filepath, code is hashed so it is not in pagesource as plaintext
-                $this->view->sesame_qrcode_url = SESAME_PATH . "qrcode_". md5($sesameCode) .".png";
+                // when sesamecode is false don't generate a qrcode
+                if ($sesameCode) {
+                    // qr code filepath, code is hashed so it is not in pagesource as plaintext
+                    $this->view->sesame_qrcode_url = SESAME_PATH . "qrcode_". md5($sesameCode) .".png";
 
-                //URL just for testing purpose
-                $this->view->sesame_url = URL . SESAME_LOGIN_URL . '?code=' . $sesameCode;
+                    //URL just for testing purpose
+                    $this->view->sesame_url = URL . SESAME_LOGIN_URL . '?code=' . $sesameCode;
 
-                // create CR code image and store it on disk
-                \PHPQRCode\QRcode::png(
-                    URL . SESAME_LOGIN_URL . '?code=' . $sesameCode, $this->view->sesame_qrcode_url,
-                    \PHPQRCode\Constants::QR_ECLEVEL_H,
-                    4
-                );
+                    // create CR code image and store it on disk
+                    \PHPQRCode\QRcode::png(
+                        URL . SESAME_LOGIN_URL . '?code=' . $sesameCode, $this->view->sesame_qrcode_url,
+                        \PHPQRCode\Constants::QR_ECLEVEL_H,
+                        4
+                    );
+                }
             }
         }
 

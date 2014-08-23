@@ -373,10 +373,20 @@ class LoginModel
         Session::init();
         $randomCode = Session::get('sesamecode');
         if (is_null($randomCode)) {
-            $randomCode = rand(100000000, 999999999);
+            // to prevent a loop of infinity we give it a maximum of "$maxAmountOfTries" tries and then continue.
+            $count = 0;
+            $maxAmountOfTries = 5;
+            do{
+                $count++;
+                $randomCode = rand(100000000, 999999999);
+                $query = $this->db->prepare("INSERT INTO sesame (random_code) VALUES (:random_code)");
+                $isStored = $query->execute(array(':random_code' => $randomCode));
+            } while($isStored === false && $count <= $maxAmountOfTries);
+            // no sesamecode is stored, return false
+            if(!$isStored){
+                return false;
+            }
             Session::set('sesamecode', $randomCode);
-            $query = $this->db->prepare("INSERT INTO sesame (random_code) VALUES (:random_code)");
-            $query->execute(array(':random_code' => $randomCode));
         }
         return $randomCode;
     }
