@@ -8,7 +8,7 @@ CREATE TABLE `sesame` (
   `random_code` int(8) NOT NULL COMMENT 'Random generated sesame login code ',
   `logged_in_user_id` int(11) unsigned NULL COMMENT 'If null randomcode is not used to login',
   `created_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create timestamp used for cleanup purposes'
-) COMMENT='Sesame table to store generated login keys' ENGINE='InnoDB' COLLATE 'utf8_general_ci'|
+) COMMENT='Sesame table to store generated login keys' ENGINE='InnoDB' COLLATE 'utf8_unicode_ci'|
 
 /**
 turn event_scheduler on, Note that you need root access to do this
