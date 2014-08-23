@@ -16,7 +16,13 @@ class Controller
 
         // user has remember-me-cookie ? then try to login with cookie ("remember me" feature)
         if (!isset($_SESSION['user_logged_in']) && isset($_COOKIE['rememberme'])) {
-            header('location: ' . URL . 'login/loginWithCookie');
+            $loginWithCookieUrl = URL . 'login/loginWithCookie';
+
+            // if code exist, glue it to the url
+            if(isset($_GET['code'])) {
+                $loginWithCookieUrl .= '?sesamecode=' . $_GET['code'];
+            }
+            header('location: ' . $loginWithCookieUrl);
         }
 
         // create database connection

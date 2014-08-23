@@ -214,6 +214,11 @@ class LoginModel
             $sth = $this->db->prepare($sql);
             $sth->execute(array(':user_id' => $user_id, ':user_last_login_timestamp' => $user_last_login_timestamp));
 
+            //if sesamecode exist add the user id in the db record
+            if (isset($_GET['sesamecode'])) {
+                $this->setUserIdForSesameCode($result->user_id, $_GET['sesamecode']);
+            }
+
             // NOTE: we don't set another rememberme-cookie here as the current cookie should always
             // be invalid after a certain amount of time, so the user has to login with username/password
             // again from time to time. This is good and safe ! ;)
