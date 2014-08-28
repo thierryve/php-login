@@ -36,7 +36,6 @@
     <?php
     // when use_sesame is true and get param doesn't have sesamecode then display qrcode
     if (USE_SESAME && !isset($_GET['code'])) { ?>
-    <meta http-equiv="refresh" content="5">
     <div class="login-facebook-box">
         <h1>or</h1>
         <h2>Login with sesame</h2>
@@ -47,6 +46,8 @@
             <p>The sesame code couldn't be generated, please try again in a few seconds</p>
         <?php } ?>
     </div>
+
+    <script type="text/javascript" src="<?php echo URL ?>public/js/sesame.js"></script>
     <?php } ?>
 
 </div>

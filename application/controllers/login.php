@@ -129,6 +129,22 @@ class Login extends Controller
     }
 
     /**
+     * Ajax: check sesamecode
+     */
+    function ajaxCheckSesame()
+    {
+        $jsonResponse = array('loggedin' => false, 'redirecturl' => '');
+
+        /* @var $login_model LoginModel */
+        $login_model = $this->loadModel('Login');
+        if ( $login_model->checkLoggedInWithSesameCode() ) {
+           $jsonResponse['loggedin'] = true;
+           $jsonResponse['redirecturl'] = URL . 'dashboard/index';
+        }
+        echo json_encode($jsonResponse);
+    }
+
+    /**
      * Show user's profile
      */
     function showProfile()
