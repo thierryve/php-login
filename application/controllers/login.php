@@ -28,28 +28,39 @@ class Login extends Controller
             $this->view->facebook_login_url = $login_model->getFacebookLoginUrl();
         }
 
-        // if we use SESAME: check if sesame code is used or create one. we don't want to do this when get param code exists
-        if (USE_SESAME && !isset($_GET['code'])) {
-            if( $login_model->checkLoggedInWithSesameCode() ) {
-                // if TRUE, then move user to dashboard/index (btw this is a browser-redirection, not a rendered view!)
+        // if we use SESAME: check if sesame code is used or create one.
+        if (USE_SESAME) {
+            // figure out if user already logged in if this is the case directly add user_id and redirect the user
+            if ($login_model->sesameAlreadyLoggedIn()) {
+                // redirect user to dashboard. die is necessary otherwise the feedback message will not appear. The
+                // reason is that the message is printed in the current view (that is never shown to the user)
                 header('location: ' . URL . 'dashboard/index');
-                exit();
-            } else {
-                $sesameCode = $login_model->getSesameCode();
-                // when sesamecode is false don't generate a qrcode
-                if ($sesameCode) {
-                    // qr code filepath, code is hashed so it is not in pagesource as plaintext
-                    $this->view->sesame_qrcode_url = SESAME_PATH . "qrcode_". md5($sesameCode) .".png";
+                die();
+            }
 
-                    //URL just for testing purpose
-                    $this->view->sesame_url = URL . SESAME_LOGIN_URL . '?code=' . $sesameCode;
+            // we don't want to do this when get param code exists
+            if (!isset($_GET['code'])) {
+                if( $login_model->checkLoggedInWithSesameCode() ) {
+                    // if TRUE, then move user to dashboard/index (btw this is a browser-redirection, not a rendered view!)
+                    header('location: ' . URL . 'dashboard/index');
+                    exit();
+                } else {
+                    $sesameCode = $login_model->getSesameCode();
+                    // when sesamecode is false don't generate a qrcode
+                    if ($sesameCode) {
+                        // qr code filepath, code is hashed so it is not in pagesource as plaintext
+                        $this->view->sesame_qrcode_url = SESAME_PATH . "qrcode_". md5($sesameCode) .".png";
 
-                    // create CR code image and store it on disk
-                    \PHPQRCode\QRcode::png(
-                        URL . SESAME_LOGIN_URL . '?code=' . $sesameCode, $this->view->sesame_qrcode_url,
-                        \PHPQRCode\Constants::QR_ECLEVEL_H,
-                        4
-                    );
+                        //URL just for testing purpose
+                        $this->view->sesame_url = URL . SESAME_LOGIN_URL . '?code=' . $sesameCode;
+
+                        // create CR code image and store it on disk
+                        \PHPQRCode\QRcode::png(
+                            URL . SESAME_LOGIN_URL . '?code=' . $sesameCode, $this->view->sesame_qrcode_url,
+                            \PHPQRCode\Constants::QR_ECLEVEL_H,
+                            4
+                        );
+                    }
                 }
             }
         }

@@ -404,12 +404,32 @@ class LoginModel
      * Add user_id to given sesameCode record in db
      * @param int $userId
      * @param string $sesameCode
+     * @return bool
      */
     private function setUserIdForSesameCode($userId, $sesameCode)
     {
         $statement = $this->db->prepare("UPDATE sesame SET logged_in_user_id = :user_id WHERE random_code = :randomCode");
-        $statement->execute(array(':user_id' => $userId, ':randomCode' => $sesameCode));
-        $_SESSION["feedback_positive"][] = FEEDBACK_SESAME_SUCCESS;
+        $queryResult = $statement->execute(array(':user_id' => $userId, ':randomCode' => $sesameCode));
+        if ($queryResult) {
+            $_SESSION["feedback_positive"][] = FEEDBACK_SESAME_SUCCESS;
+        }
+        return $queryResult;
+    }
+
+    /**
+     * check and handle sesame when user is already logged in
+     * @return bool 
+     */
+    public function sesameAlreadyLoggedIn()
+    {
+        // if we have a sesame code and we are already logged in we can directly add the user_id
+        if ($this->isUserLoggedIn() && isset($_GET['code'])) {
+            // set user_id in sesame record
+            if ($this->setUserIdForSesameCode(Session::get('user_id'), $_GET['code'])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
