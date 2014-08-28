@@ -73,8 +73,12 @@ class Login extends Controller
             // if YES, then move user to dashboard/index (btw this is a browser-redirection, not a rendered view!)
             header('location: ' . URL . 'dashboard/index');
         } else {
+            $redirectUrl = URL . 'login/index';
+            if (isset($_POST['sesamecode'])) {
+                $redirectUrl .= '?code='.$_POST['sesamecode'];
+            }
             // if NO, then move user to login/index (login form) again
-            header('location: ' . URL . 'login/index');
+            header('location: ' . $redirectUrl);
         }
     }
 
